@@ -36,20 +36,16 @@ object `package` {
 object Mercator {
   def gen[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
     import c.universe._
-
     val typeConstructor = weakTypeOf[F].typeConstructor
-
+    val mockType = appliedType(typeConstructor, typeOf[Mercator.type])
     val companion = typeConstructor.typeSymbol.companion
-    lazy val methodParams = companion.asModule.info.member(TermName("apply")).typeSignature.paramLists
-    val pointApplication = if(companion != NoSymbol && methodParams.length > 0 &&
-        methodParams.head.length > 0) q"${companion.asModule}(value)"
-    else {
-      import internal._
-      val genericType = appliedType(typeConstructor, typeOf[Mercator.type])
+    val returnType = scala.util.Try(c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe)
+    
+    val pointApplication = if(returnType.map(_ <:< mockType).getOrElse(false)) q"${companion.asModule}(value)" else {
       val subtypes = typeConstructor.typeSymbol.asClass.knownDirectSubclasses.filter { sub =>
         val companion = sub.asType.toType.companion
-        val attempt = c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe
-        attempt <:< genericType
+        val returnType = c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe
+        returnType <:< mockType
       }.map { sub => q"${sub.companion}.apply(value)" }
       if(subtypes.size == 1) subtypes.head else ???
     }
@@ -58,12 +54,8 @@ object Mercator {
       import scala.language.higherKinds
       new Monadic[$typeConstructor] {
         def point[A](value: A): Monad[A] = $pointApplication
-      
-        def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] =
-          from.flatMap(fn)
-
-        def map[A, B](from: Monad[A], fn: A => B): Monad[B] =
-          from.map(fn)
+        def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
+        def map[A, B](from: Monad[A], fn: A => B): Monad[B] = from.map(fn)
       }
     """
   }
