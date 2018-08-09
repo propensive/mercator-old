@@ -22,7 +22,7 @@ import language.experimental.macros
 
 object `package` {
   implicit def monadicEvidence[F[_]]: Monadic[F] =
-    macro Mercator.gen[F[Nothing]]
+    macro Mercator.instantiate[F[Nothing]]
   
   final implicit class Ops[M[_], A](val value: M[A]) extends AnyVal {
     @inline def flatMap[B](fn: A => M[B])(implicit monadic: Monadic[M]): M[B] =
@@ -34,20 +34,18 @@ object `package` {
 }
 
 object Mercator {
-  def gen[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
+  def instantiate[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
     import c.universe._
     val typeConstructor = weakTypeOf[F].typeConstructor
     val mockType = appliedType(typeConstructor, typeOf[Mercator.type])
-    val companion = typeConstructor.typeSymbol.companion
+    val companion = typeConstructor.dealias.typeSymbol.companion
     val returnType = scala.util.Try(c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe)
-    
     val pointApplication = if(returnType.map(_ <:< mockType).getOrElse(false)) q"${companion.asModule}(value)" else {
       val subtypes = typeConstructor.typeSymbol.asClass.knownDirectSubclasses.filter { sub =>
-        val companion = sub.asType.toType.companion
-        val returnType = c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe
-        returnType <:< mockType
+        c.typecheck(q"${sub.companion}.apply(_root_.mercator.Mercator)").tpe <:< mockType
       }.map { sub => q"${sub.companion}.apply(value)" }
-      if(subtypes.size == 1) subtypes.head else ???
+      if(subtypes.size == 1) subtypes.head
+      else c.abort(c.enclosingPosition, s"mercator: unable to derive Monadic instance for type constructor $typeConstructor")
     }
 
     q"""

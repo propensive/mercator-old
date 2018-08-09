@@ -16,11 +16,20 @@ package mercator.tests
 
 import estrapade._
 import mercator._
+import scala.language.higherKinds
 
 object Tests extends TestApp {
   def tests(): Unit = {
     monadicEvidence[Option]
     monadicEvidence[({ type L[W] = Either[String, W] })#L]
+    monadicEvidence[Seq]
+
+    def increment[F[_]: Monadic](xs: F[Int]) = for(x <- xs) yield x + 1
+
+    increment(List(1, 2, 3))
+    increment(Option(4))
+    increment(Traversable(5))
+    increment[({ type L[W] = Either[String, W] })#L](Left(""))
 
     ()
   }
