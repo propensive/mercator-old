@@ -27,7 +27,7 @@ object Tests extends TestApp {
   def tests(): Unit = {
     monadicEvidence[Option]
     monadicEvidence[({ type L[W] = Either[String, W] })#L]
-    monadicEvidence[Seq]
+    monadicEvidence[Set]
 
     def increment[F[_]: Monadic](xs: F[Int]) = for(x <- xs) yield x + 1
 
