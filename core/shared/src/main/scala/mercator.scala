@@ -54,7 +54,6 @@ object Mercator {
     }
 
     q"""
-      import scala.language.higherKinds
       new Monadic[$typeConstructor] {
         def point[A](value: A): Monad[A] = $pointApplication
         def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
