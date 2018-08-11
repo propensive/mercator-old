@@ -35,6 +35,9 @@ object `package` {
 
     @inline def map[B](fn: A => B)(implicit monadic: Monadic[M]): M[B] =
       monadic.map[A, B](value, fn)
+    
+    @inline def withFilter[B](fn: A => Boolean)(implicit monadic: MonadicFilter[M]): M[A] =
+      monadic.filter[A](value)(fn)
   }
 }
 
@@ -53,11 +56,19 @@ object Mercator {
       else c.abort(c.enclosingPosition, s"mercator: unable to derive Monadic instance for type constructor $typeConstructor")
     }
 
+    val filterMethods: List[Tree] = if(mockType.typeSymbol.info.member(TermName("filter")) == NoSymbol) Nil
+      else List(q"def filter[A](value: Monad[A], fn: A => Boolean) = value.filter(fn)")
+
+    val instantiation =
+      if(filterMethods.isEmpty) tq"_root_.mercator.Monadic[$typeConstructor]"
+      else tq"_root_.mercator.MonadicFilter[$typeConstructor]"
+
     q"""
-      new Monadic[$typeConstructor] {
+      new $instantiation {
         def point[A](value: A): Monad[A] = $pointApplication
         def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
         def map[A, B](from: Monad[A], fn: A => B): Monad[B] = from.map(fn)
+        ..$filterMethods
       }
     """
   }
@@ -68,4 +79,8 @@ trait Monadic[F[_]] {
   def point[A](value: A): F[A]
   def flatMap[A, B](from: F[A], fn: A => F[B]): F[B]
   def map[A, B](from: F[A], fn: A => B): F[B]
+}
+
+trait MonadicFilter[F[_]] extends Monadic[F] {
+  def filter[A](value: F[A])(fn: A => Boolean): F[A]
 }
