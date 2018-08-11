@@ -64,7 +64,6 @@ object Mercator {
       else tq"_root_.mercator.MonadicFilter[$typeConstructor]"
 
     q"""
-      import scala.language.higherKinds
       new $instantiation {
         def point[A](value: A): Monad[A] = $pointApplication
         def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
