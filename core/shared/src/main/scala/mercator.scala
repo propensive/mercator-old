@@ -57,7 +57,7 @@ object Mercator {
     }
 
     val filterMethods: List[Tree] = if(mockType.typeSymbol.info.member(TermName("filter")) == NoSymbol) Nil
-      else List(q"def filter[A](value: Monad[A], fn: A => Boolean) = value.filter(fn)")
+      else List(q"def filter[A](value: Monad[A])(fn: A => Boolean) = value.filter(fn)")
 
     val instantiation =
       if(filterMethods.isEmpty) tq"_root_.mercator.Monadic[$typeConstructor]"
