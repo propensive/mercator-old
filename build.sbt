@@ -50,7 +50,6 @@ lazy val buildSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
-    "-Xfuture",
     "-Ywarn-value-discard",
     "-Ywarn-dead-code",
     "-Ywarn-numeric-widen",
@@ -60,6 +59,7 @@ lazy val buildSettings = Seq(
       case Some((2, v)) if v <= 12 =>
         Seq(
           "-Xexperimental",
+          "-Xfuture",
           "-Ywarn-nullary-unit",
           "-Ywarn-inaccessible",
           "-Ywarn-adapted-args"
