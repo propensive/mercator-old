@@ -12,10 +12,10 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaVersion := crossScalaVersions.value.head
   )
   .jvmSettings(
-    crossScalaVersions := "2.12.4" :: "2.13.0-RC1" :: "2.11.12" :: Nil
+    crossScalaVersions := "2.12.8" :: "2.13.0" :: "2.11.12" :: Nil
   )
   .jsSettings(
-    crossScalaVersions := "2.12.4" :: "2.13.0-RC1" :: "2.11.12" :: Nil
+    crossScalaVersions := "2.12.8" :: "2.13.0" :: "2.11.12" :: Nil
   )
   .nativeSettings(
     crossScalaVersions := "2.11.12" :: Nil
@@ -74,31 +74,25 @@ lazy val buildSettings = Seq(
   )
 )
 
-lazy val publishSettings = Seq(
+lazy val publishSettings = ossPublishSettings ++ Seq(
   homepage := Some(url("http://propensive.com/")),
+  organizationHomepage := Some(url("http://propensive.com/")),
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  autoAPIMappings := true,
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ =>
-    false
-  },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  pomExtra := (
-    <developers>
-      <developer>
-        <id>propensive</id>
-        <name>Jon Pretty</name>
-        <url>https://github.com/propensive/mercator/</url>
-      </developer>
-    </developers>
-  )
+  developers := List(
+    Developer(
+      id = "propensive",
+      name = "Jon Pretty",
+      email = "",
+      url = new URL("https://github.com/propensive/mercator/")
+    )
+  ),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/propensive/" + name.value),
+      "scm:git:git@github.com/propensive/" + name.value + ".git"
+    )
+  ),
+  sonatypeProfileName := "com.propensive",
 )
 
 lazy val unmanagedSettings = unmanagedBase :=
