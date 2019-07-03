@@ -1,6 +1,6 @@
 // shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
-import sbtcrossproject.{crossProject, CrossType}
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+import com.softwaremill.PublishTravis.publishTravisSettings
+import sbtcrossproject.crossProject
 
 lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .in(file("core"))
@@ -34,14 +34,14 @@ lazy val tests = project
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
     initialCommands in console := """import mercator.tests._; import mercator._;""",
   )
+  .settings(publishArtifact := false)
   .dependsOn(coreJVM)
 
 lazy val root = (project in file("."))
   .aggregate(coreJVM, coreJS, coreNative, tests)
-  .settings(
-    publish := {},
-    publishLocal := {}
-  )
+  .settings(publishSettings)
+  .settings(publishTravisSettings)
+  .settings(publishArtifact := false)
 
 lazy val buildSettings = Seq(
   organization := "com.propensive",
