@@ -4,36 +4,25 @@ import sbtcrossproject.crossProject
 
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .in(file("core"))
-  .settings(buildSettings: _*)
-  .settings(publishSettings: _*)
-  .settings(scalaMacroDependencies: _*)
+  .settings(buildSettings)
+  .settings(publishSettings)
+  .settings(scalaMacroDependencies)
   .settings(moduleName := "mercator")
-  .settings(
-    scalaVersion := crossScalaVersions.value.head
-  )
-  .jvmSettings(
-    crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil
-  )
-  .jsSettings(
-    crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil
-  )
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 
 lazy val tests = project
   .in(file("tests"))
-  .settings(buildSettings: _*)
+  .settings(buildSettings)
   .settings(moduleName := "mercator-tests")
-  .settings(crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil)
-  .settings(
-    initialCommands in console := """import mercator.tests._; import mercator._;""",
-  )
+  .settings(initialCommands in console := """import mercator.tests._; import mercator._;""")
   .settings(publishArtifact := false)
   .dependsOn(coreJVM)
 
 lazy val root = (project in file("."))
   .aggregate(coreJVM, coreJS, tests)
+  .settings(buildSettings)
   .settings(publishSettings)
   .settings(publishTravisSettings)
   .settings(publishArtifact := false)
@@ -65,7 +54,9 @@ lazy val buildSettings = Seq(
   scmInfo := Some(
     ScmInfo(url("https://github.com/propensive/mercator"),
             "scm:git:git@github.com:propensive/mercator.git")
-  )
+  ),
+  crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil,
+  scalaVersion := crossScalaVersions.value.head
 )
 
 lazy val publishSettings = ossPublishSettings ++ Seq(
