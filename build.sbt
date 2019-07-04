@@ -29,6 +29,7 @@ lazy val tests = project
   .in(file("tests"))
   .settings(buildSettings: _*)
   .settings(moduleName := "mercator-tests")
+  .settings(crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil)
   .settings(
     initialCommands in console := """import mercator.tests._; import mercator._;""",
   )
