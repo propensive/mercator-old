@@ -31,7 +31,6 @@ lazy val tests = project
   .settings(unmanagedSettings)
   .settings(moduleName := "mercator-tests")
   .settings(
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
     initialCommands in console := """import mercator.tests._; import mercator._;""",
   )
   .settings(publishArtifact := false)
@@ -98,8 +97,8 @@ lazy val publishSettings = ossPublishSettings ++ Seq(
 lazy val unmanagedSettings = unmanagedBase :=
   baseDirectory.value / "lib" /
     (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => "2.11"
-      case _             => "2.12"
+      case Some((major, minor)) => s"$major.$minor"
+      case _ => "2.12"
     })
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
