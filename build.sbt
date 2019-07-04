@@ -30,7 +30,6 @@ lazy val tests = project
   .settings(buildSettings: _*)
   .settings(moduleName := "mercator-tests")
   .settings(
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
     initialCommands in console := """import mercator.tests._; import mercator._;""",
   )
   .settings(publishArtifact := false)
