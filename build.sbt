@@ -28,7 +28,6 @@ lazy val coreNative = core.native
 lazy val tests = project
   .in(file("tests"))
   .settings(buildSettings: _*)
-  .settings(unmanagedSettings)
   .settings(moduleName := "mercator-tests")
   .settings(
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
@@ -94,13 +93,6 @@ lazy val publishSettings = ossPublishSettings ++ Seq(
   ),
   sonatypeProfileName := "com.propensive",
 )
-
-lazy val unmanagedSettings = unmanagedBase :=
-  baseDirectory.value / "lib" /
-    (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => "2.11"
-      case _             => "2.12"
-    })
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,

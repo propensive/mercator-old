@@ -19,11 +19,11 @@
 */
 package mercator.tests
 
-import estrapade._
 import mercator._
 import scala.language.higherKinds
 
-object Tests extends TestApp {
+object Tests {
+  
   def tests(): Unit = {
     monadicEvidence[Option]
     monadicEvidence[({ type L[W] = Either[String, W] })#L]
