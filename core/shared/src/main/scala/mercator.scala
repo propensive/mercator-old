@@ -21,9 +21,9 @@ package mercator
 
 import scala.language.higherKinds
 import scala.reflect.macros._
-import scala.collection.generic.CanBuildFrom
 
 import language.experimental.macros
+import language.implicitConversions
 
 object `package` {
   implicit def monadic[F[_]]: Monadic[F] =
@@ -40,19 +40,11 @@ object `package` {
       monadic.filter[A](value)(fn)
   }
 
-  final implicit class CollOps[M[_], Coll[T] <: Iterable[T], A](val value: Coll[M[A]]) extends AnyVal {
-    @inline def sequence(implicit monadic: Monadic[M], cbf: CanBuildFrom[Nothing, A, Coll[A]]): M[Coll[A]] =
-      value.foldLeft(monadic.point(List[A]()): M[List[A]]) { (acc, next) =>
-        acc.flatMap { xs => next.map(_ :: xs) }
-      }.map(_.reverse.to[Coll])
-  }
-  
-  final implicit class TraversableOps[Coll[T] <: Iterable[T], A](val value: Coll[A]) extends AnyVal {
-    @inline def traverse[B, M[_]](fn: A => M[B])(implicit monadic: Monadic[M], cbf: CanBuildFrom[Nothing, B, Coll[B]]): M[Coll[B]] =
-      value.foldLeft(monadic.point(List[B]())) { (acc, next) =>
-        acc.flatMap { xs => fn(next).map(_ :: xs) }
-      }.map(_.reverse.to[Coll])
-  }
+  implicit def collOps[M[_], Coll[T] <: Iterable[T], A](value: Coll[M[A]]): CollOps[M, Coll, A] =
+    new CollOps(value)
+
+  implicit def traversableOps[Coll[T] <: Iterable[T], A](value: Coll[A]): TraversableOps[Coll, A] =
+    new TraversableOps(value)
 }
 
 object Mercator {
