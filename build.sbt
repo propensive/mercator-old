@@ -2,7 +2,7 @@
 import com.softwaremill.PublishTravis.publishTravisSettings
 import sbtcrossproject.crossProject
 
-lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+lazy val core = crossProject(JVMPlatform, JSPlatform)
   .in(file("core"))
   .settings(buildSettings: _*)
   .settings(publishSettings: _*)
@@ -12,18 +12,14 @@ lazy val core = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaVersion := crossScalaVersions.value.head
   )
   .jvmSettings(
-    crossScalaVersions := "2.12.8" :: "2.13.0" :: "2.11.12" :: Nil
+    crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil
   )
   .jsSettings(
-    crossScalaVersions := "2.12.8" :: "2.13.0" :: "2.11.12" :: Nil
-  )
-  .nativeSettings(
-    crossScalaVersions := "2.11.12" :: Nil
+    crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil
   )
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
-lazy val coreNative = core.native
 
 lazy val tests = project
   .in(file("tests"))
@@ -37,7 +33,7 @@ lazy val tests = project
   .dependsOn(coreJVM)
 
 lazy val root = (project in file("."))
-  .aggregate(coreJVM, coreJS, coreNative, tests)
+  .aggregate(coreJVM, coreJS, tests)
   .settings(publishSettings)
   .settings(publishTravisSettings)
   .settings(publishArtifact := false)
