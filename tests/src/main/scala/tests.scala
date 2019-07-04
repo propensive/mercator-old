@@ -24,7 +24,7 @@ import scala.language.higherKinds
 
 object Tests {
   
-  def tests(): Unit = {
+  def main(args: Array[String]): Unit = {
     monadicEvidence[Option]
     monadicEvidence[({ type L[W] = Either[String, W] })#L]
     monadicEvidence[Seq]
