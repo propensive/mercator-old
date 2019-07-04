@@ -19,25 +19,39 @@
 */
 package mercator
 
-import scala.annotation.compileTimeOnly
 import scala.language.higherKinds
 import scala.reflect.macros._
+import scala.collection.generic.CanBuildFrom
 
 import language.experimental.macros
 
 object `package` {
-  implicit def monadicEvidence[F[_]]: Monadic[F] =
+  implicit def monadic[F[_]]: Monadic[F] =
     macro Mercator.instantiate[F[Nothing]]
   
   final implicit class Ops[M[_], A](val value: M[A]) extends AnyVal {
     @inline def flatMap[B](fn: A => M[B])(implicit monadic: Monadic[M]): M[B] =
-      monadic.flatMap[A, B](value, fn)
+      monadic.flatMap[A, B](value)(fn)
 
     @inline def map[B](fn: A => B)(implicit monadic: Monadic[M]): M[B] =
-      monadic.map[A, B](value, fn)
+      monadic.map[A, B](value)(fn)
     
-    @inline def withFilter[B](fn: A => Boolean)(implicit monadic: MonadicFilter[M]): M[A] =
+    @inline def filter(fn: A => Boolean)(implicit monadic: MonadicFilter[M]): M[A] =
       monadic.filter[A](value)(fn)
+  }
+
+  final implicit class CollOps[M[_], Coll[T] <: Iterable[T], A](val value: Coll[M[A]]) extends AnyVal {
+    @inline def sequence(implicit monadic: Monadic[M], cbf: CanBuildFrom[Nothing, A, Coll[A]]): M[Coll[A]] =
+      value.foldLeft(monadic.point(List[A]()): M[List[A]]) { (acc, next) =>
+        acc.flatMap { xs => next.map(_ :: xs) }
+      }.map(_.reverse.to[Coll])
+  }
+  
+  final implicit class TraversableOps[Coll[T] <: Iterable[T], A](val value: Coll[A]) extends AnyVal {
+    @inline def traverse[B, M[_]](fn: A => M[B])(implicit monadic: Monadic[M], cbf: CanBuildFrom[Nothing, B, Coll[B]]): M[Coll[B]] =
+      value.foldLeft(monadic.point(List[B]())) { (acc, next) =>
+        acc.flatMap { xs => fn(next).map(_ :: xs) }
+      }.map(_.reverse.to[Coll])
   }
 }
 
@@ -66,8 +80,8 @@ object Mercator {
     q"""
       new $instantiation {
         def point[A](value: A): Monad[A] = $pointApplication
-        def flatMap[A, B](from: Monad[A], fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
-        def map[A, B](from: Monad[A], fn: A => B): Monad[B] = from.map(fn)
+        def flatMap[A, B](from: Monad[A])(fn: A => Monad[B]): Monad[B] = from.flatMap(fn)
+        def map[A, B](from: Monad[A])(fn: A => B): Monad[B] = from.map(fn)
         ..$filterMethods
       }
     """
@@ -77,8 +91,8 @@ object Mercator {
 trait Monadic[F[_]] {
   type Monad[T] = F[T]
   def point[A](value: A): F[A]
-  def flatMap[A, B](from: F[A], fn: A => F[B]): F[B]
-  def map[A, B](from: F[A], fn: A => B): F[B]
+  def flatMap[A, B](from: F[A])(fn: A => F[B]): F[B]
+  def map[A, B](from: F[A])(fn: A => B): F[B]
 }
 
 trait MonadicFilter[F[_]] extends Monadic[F] {
