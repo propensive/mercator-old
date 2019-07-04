@@ -44,7 +44,6 @@ lazy val root = (project in file("."))
 lazy val buildSettings = Seq(
   organization := "com.propensive",
   name := "mercator",
-  version := "0.1.1",
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
