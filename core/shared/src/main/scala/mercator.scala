@@ -25,9 +25,11 @@ import scala.collection.generic.CanBuildFrom
 
 import language.experimental.macros
 
+import language.reflectiveCalls
+
 object `package` {
   implicit def monadic[F[_]]: Monadic[F] =
-    macro Mercator.instantiateMonadic[F[Nothing]]
+    macro Mercator.instantiate.monadic[F[Nothing]]
   
   final implicit class Ops[M[_], A](val value: M[A]) extends AnyVal {
     @inline def flatMap[B](fn: A => M[B])(implicit monadic: Monadic[M]): M[B] =
@@ -41,69 +43,53 @@ object `package` {
   }
   
   implicit def applicative[F[_]]: Applicative[F] =
-    macro Mercator.instantiateApplicative[F[Nothing]]
+    macro Mercator.instantiate.applicative[F[Nothing]]
   
   implicit def filterable[F[_]]: Filterable[F] =
-    macro Mercator.instantiateFilterable[F[Nothing]]
+    macro Mercator.instantiate.filterable[F[Nothing]]
 }
 
-object Mercator {
+private[mercator] object Mercator {
 
-  def instantiateMonadic[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
+  object instantiate {
+    def applicative[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).applicative
+    def monadic[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).monadic
+    def filterable[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).filterable
+  }
+
+  def common[F: c.WeakTypeTag](c: whitebox.Context) = new {
     import c.universe._
 
-    val typeConstructor = weakTypeOf[F].typeConstructor
-    val mockType = appliedType(typeConstructor, typeOf[Mercator.type])
-    val companion = typeConstructor.dealias.typeSymbol.companion
-    val returnType = scala.util.Try(c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe)
+    private val typeConstructor = weakTypeOf[F].typeConstructor
+    private val mockType = appliedType(typeConstructor, typeOf[Mercator.type])
+    private val companion = typeConstructor.dealias.typeSymbol.companion
+    private val returnType = scala.util.Try(c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe)
     
-    val pointAp = if(returnType.map(_ <:< mockType).getOrElse(false)) q"${companion.asModule}(value)" else {
-      val subtypes = typeConstructor.typeSymbol.asClass.knownDirectSubclasses.filter { sub =>
-        c.typecheck(q"${sub.companion}.apply(_root_.mercator.Mercator)").tpe <:< mockType
-      }.map { sub => q"${sub.companion}.apply(value)" }
-      if(subtypes.size == 1) subtypes.head
-      else c.abort(c.enclosingPosition, s"mercator: unable to derive Monadic instance for type constructor $typeConstructor")
-    }
+    private def pointAp =
+      if(returnType.map(_ <:< mockType).getOrElse(false)) q"${companion.asModule}(value)" else {
+        val subtypes = typeConstructor.typeSymbol.asClass.knownDirectSubclasses.filter { sub =>
+          c.typecheck(q"${sub.companion}.apply(_root_.mercator.Mercator)").tpe <:< mockType
+        }.map { sub => q"${sub.companion}.apply(value)" }
+        if(subtypes.size == 1) subtypes.head
+        else c.abort(c.enclosingPosition, s"mercator: unable to derive Monadic instance for type constructor $typeConstructor")
+      }
 
-    q"""
+    def monadic: c.Tree = q"""
       new _root_.mercator.Monadic[$typeConstructor] {
         def point[A](value: A): Apply[A] = ${pointAp}
         def map[A, B](from: Apply[A])(fn: A => B): Apply[B] = from.map(fn)
         def flatMap[A, B](from: Apply[A])(fn: A => Apply[B]): Apply[B] = from.flatMap(fn)
       }
     """
-  }
   
-  def instantiateApplicative[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
-    import c.universe._
-
-    val typeConstructor = weakTypeOf[F].typeConstructor
-    val mockType = appliedType(typeConstructor, typeOf[Mercator.type])
-    val companion = typeConstructor.dealias.typeSymbol.companion
-    val returnType = scala.util.Try(c.typecheck(q"$companion.apply(_root_.mercator.Mercator)").tpe)
-    
-    val pointAp = if(returnType.map(_ <:< mockType).getOrElse(false)) q"${companion.asModule}(value)" else {
-      val subtypes = typeConstructor.typeSymbol.asClass.knownDirectSubclasses.filter { sub =>
-        c.typecheck(q"${sub.companion}.apply(_root_.mercator.Mercator)").tpe <:< mockType
-      }.map { sub => q"${sub.companion}.apply(value)" }
-      if(subtypes.size == 1) subtypes.head
-      else c.abort(c.enclosingPosition, s"mercator: unable to derive Applicative instance for type constructor $typeConstructor")
-    }
-
-    q"""
+    def applicative: c.Tree = q"""
       new _root_.mercator.Applicative[$typeConstructor] {
         def point[A](value: A): Apply[A] = ${pointAp}
         def map[A, B](from: Apply[A])(fn: A => B): Apply[B] = from.map(fn)
       }
     """
-  }
-  
-  def instantiateFilterable[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
-    import c.universe._
 
-    val typeConstructor = weakTypeOf[F].typeConstructor
-    
-    q"""
+    def filterable: c.Tree = q"""
       new _root_.mercator.Filterable[$typeConstructor] {
         def filter[A](value: Apply[A])(fn: A => Boolean): Apply[A] = value.filter(fn)
       }
