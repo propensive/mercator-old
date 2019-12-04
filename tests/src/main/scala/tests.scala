@@ -25,9 +25,9 @@ import scala.language.higherKinds
 object Tests {
   
   def main(args: Array[String]): Unit = {
-    monadic[Option]
+    applicative[Option]
     monadic[({ type L[W] = Either[String, W] })#L]
-    monadic[Seq]
+    filterable[Seq]
 
     def increment[F[_]: Monadic](xs: F[Int]) = for(x <- xs) yield x + 1
 
