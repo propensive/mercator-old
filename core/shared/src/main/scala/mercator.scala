@@ -35,24 +35,24 @@ object `package` {
     @inline def flatMap[B](fn: A => M[B])(implicit monadic: Monadic[M]): M[B] =
       monadic.flatMap[A, B](value)(fn)
 
-    @inline def map[B](fn: A => B)(implicit applicative: Applicative[M]): M[B] =
-      applicative.map[A, B](value)(fn)
+    @inline def map[B](fn: A => B)(implicit functor: Functor[M]): M[B] =
+      functor.map[A, B](value)(fn)
     
     @inline def filter(fn: A => Boolean)(implicit filterable: Filterable[M]): M[A] =
       filterable.filter[A](value)(fn)
   }
   
-  implicit def applicative[F[_]]: Applicative[F] =
-    macro Mercator.instantiate.applicative[F[Nothing]]
+  implicit def functor[F[_]]: Functor[F] =
+    macro Mercator.instantiate.functor[F[Nothing]]
   
   implicit def filterable[F[_]]: Filterable[F] =
     macro Mercator.instantiate.filterable[F[Nothing]]
 }
 
-private[mercator] object Mercator {
+object Mercator {
 
   object instantiate {
-    def applicative[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).applicative
+    def functor[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).functor
     def monadic[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).monadic
     def filterable[F: c.WeakTypeTag](c: whitebox.Context): c.Tree = common(c).filterable
   }
@@ -82,8 +82,8 @@ private[mercator] object Mercator {
       }
     """
   
-    def applicative: c.Tree = q"""
-      new _root_.mercator.Applicative[$typeConstructor] {
+    def functor: c.Tree = q"""
+      new _root_.mercator.Functor[$typeConstructor] {
         def point[A](value: A): Apply[A] = ${pointAp}
         def map[A, B](from: Apply[A])(fn: A => B): Apply[B] = from.map(fn)
       }
@@ -97,13 +97,13 @@ private[mercator] object Mercator {
   }
 }
 
-trait Applicative[F[_]] {
+trait Functor[F[_]] {
   type Apply[X] = F[X]
   def point[A](value: A): F[A]
   def map[A, B](from: F[A])(fn: A => B): F[B]
 }
 
-trait Monadic[F[_]] extends Applicative[F] {
+trait Monadic[F[_]] extends Functor[F] {
   def flatMap[A, B](from: F[A])(fn: A => F[B]): F[B]
 }
 
