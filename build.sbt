@@ -81,6 +81,6 @@ lazy val publishSettings = ossPublishSettings ++ Seq(
 )
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
+  libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % Provided
 )
