@@ -25,7 +25,7 @@ import scala.language.higherKinds
 object Tests {
   
   def main(args: Array[String]): Unit = {
-    applicative[Option]
+    functor[Option]
     monadic[({ type L[W] = Either[String, W] })#L]
     filterable[Seq]
 
