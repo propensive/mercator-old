@@ -1,0 +1,8 @@
+Mercator is a macro for automatically constructing evidence that a known type
+may be used in a for-comprehension, for abstracting over monad-like types with
+no impact on performance.
+
+This allows us to write code against generic type constructors which can assume
+that they are usable in a for-comprehension, without having the evidence that
+they are until the application point when the type constructor is known, at
+which point, Mercator will construct it.

@@ -1,0 +1,4 @@
+- abstracts over monad-like types
+- constructs a monad typeclass instance for any type with `flatMap`, `map` and a "point" constructor
+- makes intelligent guesses about identifying the "point" constructor for a type
+- constructs a functor instance if only `map` and "point" are available

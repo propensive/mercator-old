@@ -1,86 +1,52 @@
-// shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
-import com.softwaremill.PublishTravis.publishTravisSettings
-import sbtcrossproject.crossProject
+ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / organization := "com.propensive"
+ThisBuild / organizationName := "Propensive OÜ"
+ThisBuild / organizationHomepage := Some(url("https://propensive.com/"))
+ThisBuild / version := "0.5.0"
 
-lazy val core = crossProject(JVMPlatform, JSPlatform)
-  .in(file("core"))
-  .settings(buildSettings)
-  .settings(publishSettings)
-  .settings(scalaMacroDependencies)
-  .settings(moduleName := "mercator")
-
-lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
-
-lazy val tests = project
-  .in(file("tests"))
-  .settings(buildSettings)
-  .settings(moduleName := "mercator-tests")
-  .settings(initialCommands in console := """import mercator.tests._; import mercator._;""")
-  .settings(publishArtifact := false)
-  .dependsOn(coreJVM)
-
-lazy val root = (project in file("."))
-  .aggregate(coreJVM, coreJS, tests)
-  .settings(buildSettings)
-  .settings(publishSettings)
-  .settings(publishTravisSettings)
-  .settings(publishArtifact := false)
-
-lazy val buildSettings = Seq(
-  organization := "com.propensive",
-  name := "mercator",
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-feature",
-    "-Ywarn-value-discard",
-    "-Ywarn-dead-code",
-    "-Ywarn-numeric-widen",
-  ),
-  scalacOptions ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, v)) if v <= 12 =>
-        Seq(
-          "-Xexperimental",
-          "-Xfuture",
-          "-Ywarn-nullary-unit",
-          "-Ywarn-inaccessible",
-          "-Ywarn-adapted-args"
-        )
-      case _ =>
-        Nil
-    }
-  },
-  scmInfo := Some(
-    ScmInfo(url("https://github.com/propensive/mercator"),
-            "scm:git:git@github.com:propensive/mercator.git")
-  ),
-  crossScalaVersions := "2.12.8" :: "2.13.0" :: Nil,
-  scalaVersion := crossScalaVersions.value.head
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/propensive/mercator"),
+    "scm:git@github.com:propensive/mercator.git"
+  )
+)
+ThisBuild / developers := List(
+  Developer(
+    id    = "propensive",
+    name  = "Jon Pretty",
+    email = "jon.pretty@propensive.com",
+    url   = url("https://twitter.com/propensive")
+  )
 )
 
-lazy val publishSettings = ossPublishSettings ++ Seq(
-  homepage := Some(url("http://propensive.com/")),
-  organizationHomepage := Some(url("http://propensive.com/")),
-  licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  developers := List(
-    Developer(
-      id = "propensive",
-      name = "Jon Pretty",
-      email = "",
-      url = new URL("https://github.com/propensive/mercator/")
-    )
-  ),
-  scmInfo := Some(
-    ScmInfo(
-      url("https://github.com/propensive/" + name.value),
-      "scm:git:git@github.com/propensive/" + name.value + ".git"
-    )
-  ),
-  sonatypeProfileName := "com.propensive",
-)
+ThisBuild / description := "Automatic creation of typeclass evidence for monad-like types"
+ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / homepage := Some(url("https://github.com/propensive/mercator"))
 
-lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
-)
+ThisBuild / pomIncludeRepository := { _ => false }
+
+ThisBuild / publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+
+ThisBuild / publishMavenStyle := true
+
+lazy val core = (project in file(".sbt/core"))
+  .settings(
+    name := "mercator-core",
+    Compile / scalaSource := baseDirectory.value / ".." / ".." / "src" / "core",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % Provided
+  )
+
+lazy val test = (project in file(".sbt/test"))
+  .dependsOn(core)
+  .settings(
+    name := "mercator-test",
+    scalacOptions ++= Seq("-Xexperimental", "-Xfuture"),
+    Compile / scalaSource := baseDirectory.value / ".." / ".." / "src" / "test",
+    libraryDependencies += "com.propensive" %% "probably-cli" % "0.5.0",
+    libraryDependencies += "com.propensive" %% "contextual-examples" % "2.0.0"
+  )
