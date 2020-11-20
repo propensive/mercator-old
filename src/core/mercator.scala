@@ -58,6 +58,15 @@ object `package` {
       case None    => monadic.point(None)
     }
   }
+  
+  final implicit class OptionOps[T, M[_]](val opt: Option[M[T]]) extends AnyVal {
+
+    @inline
+    def sequence(implicit monadic: Monadic[M]): M[Option[T]] = opt match {
+      case Some(v) => v.map(Some(_))
+      case None    => monadic.point(None)
+    }
+  }
 }
 
 object Mercator {
