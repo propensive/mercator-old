@@ -44,6 +44,12 @@ object `package` {
   
   implicit def filterable[F[_]]: Filterable[F] =
     macro Mercator.instantiate.filterable[F[Nothing]]
+
+  implicit def collOps[M[_], Coll[T] <: Traversable[T], A](value: Coll[M[A]]): CollOps[M, Coll, A] =
+    new CollOps[M, Coll, A](value)
+
+  implicit def traversableOps[Coll[T] <: Traversable[T], A](value: Coll[A]): TraversableOps[Coll, A] =
+    new TraversableOps[Coll, A](value)
 }
 
 object Mercator {
