@@ -50,6 +50,14 @@ object `package` {
 
   implicit def traversableOps[Coll[T] <: Traversable[T], A](value: Coll[A]): TraversableOps[Coll, A] =
     new TraversableOps[Coll, A](value)
+  
+  final implicit class TraversableOptionOps[A](val opt: Option[A]) extends AnyVal {
+    @inline
+    def traverse[B, M[_]](fn: A => M[B])(implicit monadic: Monadic[M]): M[Option[B]] = opt match {
+      case Some(v) => fn(v).map(Some(_))
+      case None    => monadic.point(None)
+    }
+  }
 }
 
 object Mercator {
