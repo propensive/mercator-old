@@ -1,6 +1,6 @@
 /*
 
-    Mercator, version 0.4.0. Copyright 2018-20 Jon Pretty, Propensive OÜ.
+    Mercator, version 0.6.0. Copyright 2018-20 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -44,6 +44,29 @@ object `package` {
   
   implicit def filterable[F[_]]: Filterable[F] =
     macro Mercator.instantiate.filterable[F[Nothing]]
+
+  implicit def collOps[M[_], Coll[T] <: Traversable[T], A](value: Coll[M[A]]): CollOps[M, Coll, A] =
+    new CollOps[M, Coll, A](value)
+
+  implicit def traversableOps[Coll[T] <: Traversable[T], A](value: Coll[A]): TraversableOps[Coll, A] =
+    new TraversableOps[Coll, A](value)
+  
+  final implicit class TraversableOptionOps[A](val opt: Option[A]) extends AnyVal {
+    @inline
+    def traverse[B, M[_]](fn: A => M[B])(implicit monadic: Monadic[M]): M[Option[B]] = opt match {
+      case Some(v) => fn(v).map(Some(_))
+      case None    => monadic.point(None)
+    }
+  }
+  
+  final implicit class OptionOps[T, M[_]](val opt: Option[M[T]]) extends AnyVal {
+
+    @inline
+    def sequence(implicit monadic: Monadic[M]): M[Option[T]] = opt match {
+      case Some(v) => v.map(Some(_))
+      case None    => monadic.point(None)
+    }
+  }
 }
 
 object Mercator {
